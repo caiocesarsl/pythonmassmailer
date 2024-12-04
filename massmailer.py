@@ -208,25 +208,26 @@ def monitor_thread_proc(myarg):
         time.sleep(2)
 
 def start_the_process():
-    write_mysmtp_log("Script started","StartTheProcess",False,True)
+    write_mysmtp_log("Script started", "StartTheProcess", False, True)
     try:
-        #load global configuration
+        # Carregar a configuração global
         load_config()
-        if (config.totalThreads==0):
+        if (config.totalThreads == 0):
             raise Exception("Total threads are 0")
 
-        #start monitoring thread
-        threading._start_new_thread(monitor_thread_proc,(0,))
-        threadIndex=0
-        #start all email sending threads
+        # Iniciar o thread de monitoramento
+        threading.Thread(target=monitor_thread_proc, args=(0,)).start()
+
+        threadIndex = 0
+        # Iniciar todos os threads de envio de e-mail
         for x in range(config.totalThreads):
-            tconfig=MassMailerThreadConfig() #thread specific configuration
-            tconfig.config=config #global config object
-            tconfig.threadIndex=threadIndex #index of this thread
-            threading._start_new_thread(send_email_thread,(tconfig,))
-            threadIndex+=1
+            tconfig = MassMailerThreadConfig()  # Configuração específica do thread
+            tconfig.config = config  # Objeto de configuração global
+            tconfig.threadIndex = threadIndex  # Índice deste thread
+            threading.Thread(target=send_email_thread, args=(tconfig,)).start()
+            threadIndex += 1
     except Exception as err:
-        write_mysmtp_log("Exception: "+format(err),"StartTheProcess",False,True)
+        write_mysmtp_log("Exception: " + format(err), "StartTheProcess", False, True)
         raise err
 
 start_the_process()

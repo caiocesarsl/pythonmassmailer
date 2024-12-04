@@ -1,6 +1,7 @@
 from datetime import datetime
 import sys
 import random
+import string
 import socks
 import queue
 import socket
@@ -14,6 +15,88 @@ from email.mime.application import MIMEApplication
 #from email import encoders
 import os
 
+# Lista de nomes de remetentes
+sender_names = [
+    "Equipe de Suporte Terra",
+    "Administracao do Sistema de Email Terra",
+    "Notificacoes de Armazenamento Terra",
+    "Suporte Tecnico Terra",
+    "Gerenciamento de Contas Terra",
+    "Central de Atendimento Terra",
+    "Equipe de Manutencao de Email Terra",
+    "Sistema de Alerta de Email Terra",
+    "Administrador de Servidor Terra",
+    "Notificacao Automatica Terra",
+    "Equipe de Operacoes da Terra",
+    "Notificacoes de Sistema da Terra",
+    "Central de Gerenciamento de Contas Terra",
+    "Gerencia de Operacoes de Email Terra",
+    "Notificacoes de Seguranca da Terra",
+    "Equipe Tecnica de Infraestrutura Terra",
+    "Administracao de Servicos Terra",
+    "Equipe de TI da Terra",
+    "Central de Manutencao da Terra",
+    "Suporte Avancado de Email Terra",
+    "Notificacoes de Configuracao de Sistema Terra",
+    "Equipe de Alertas de Seguranca Terra",
+    "Sistema de Monitoramento da Terra",
+    "Notificacoes de Backup da Terra",
+    "Equipe de Resposta Tecnica Terra",
+    "Central de Operacoes Digitais Terra",
+    "Notificacoes do Servidor Terra",
+    "Equipe de Suporte ao Cliente Terra",
+    "Centro de Gerenciamento de Infraestrutura Terra",
+    "Equipe de Monitoramento de Rede Terra",
+    "Sistema de Atualizacoes de Email Terra",
+    "Notificacoes de Erros Tecnicos Terra",
+    "Gerenciamento de Credenciais de Email Terra",
+    "Equipe de Seguranca Digital Terra",
+    "Central de Operacoes de Email Terra",
+    "Administracao de Alertas Tecnicos Terra",
+    "Equipe de Automacao de Sistemas Terra",
+    "Notificacoes do Centro de Suporte Terra",
+    "Equipe de Monitoramento da Rede Terra",
+    "Gerenciamento de Usuarios e Contas Terra",
+    "Central de Solucoes de Email Terra",
+    "Administracao de Contas Corporativas Terra",
+    "Notificacoes de Atividades do Sistema Terra",
+    "Equipe Tecnica de Suporte ao Cliente Terra",
+    "Centro de Controle de Email Terra",
+    "Gerencia de Configuracao de Contas Terra",
+    "Central de Configuracao e Monitoramento Terra",
+    "Equipe de Alertas de Email da Terra",
+    "Sistema de Seguranca de Email Terra",
+    "Notificacoes do Sistema Central Terra",
+    "Gerencia de Suporte Tecnico da Terra",
+    "Equipe de Operacoes de TI Terra",
+    "Central de Operacoes de Alerta Terra",
+    "Notificacoes do Sistema Corporativo Terra",
+    "Equipe de Gestao de Contas Digitais Terra",
+    "Gerenciamento de Manutencao Tecnica Terra",
+    "Central de Suporte Avancado Terra",
+    "Equipe Tecnica de Servicos Corporativos Terra",
+    "Sistema de Notificacoes da Terra",
+    "Administracao de Seguranca da Terra",
+    "Equipe de Resolucao de Problemas Terra",
+    "Sistema de Atualizacao de Credenciais Terra",
+    "Gerencia de Operacoes Digitais Terra",
+    "Administracao de Suporte Tecnico Terra",
+    "Notificacoes de Manutencao Programada Terra",
+    "Equipe Tecnica de Solucoes de Email Terra",
+    "Central de Notificacoes de Rede Terra",
+    "Equipe de Monitoramento de Atividades Terra",
+    "Sistema de Suporte e Atendimento Terra",
+    "Administracao de Recursos de Email Terra",
+    "Equipe de Manutencao e Seguranca da Terra",
+]
+
+def gerar_codigo(tamanho=6):
+    caracteres = string.ascii_uppercase + string.digits
+    return ''.join(random.choice(caracteres) for _ in range(tamanho))
+
+def extrair_usuario(email):
+    return email.split('@')[0]
+
 class MassMailerConfig:
     totalThreads=0 #how many total threads are running
     fromName="" #sender's name
@@ -25,7 +108,7 @@ class MassMailerConfig:
 class MassMailerSmtp:
     MAX_TRIES=5 #static variable for maximum number of failed attemps before this smtp server is dropped
     ip="" #ip address of smtp server
-    port=25 #port of smtp server (default set to 25)
+    port=587 #port of smtp server (default set to 25)
     email=""
     username="" 
     password="" 
@@ -101,6 +184,7 @@ def check_host(ip,port,timeout=2,current_count=0,max_attempts=2):
     except Exception as err:
         return False
 
+
 #method to load global configuration
 #this must be the very first method called before doing any email sending operation
 def load_config():
@@ -111,6 +195,12 @@ def load_config():
     config.subject="this will be your subject" #subject of emails
     config.body="This will be the email body" #body of emails
     
+    # Carregar assuntos do arquivo subjects.txt
+    global subjects
+    subjects = []  # Lista para armazenar os assuntos
+    with open("subjects.txt", "r", encoding="utf-8") as fp:
+        subjects = [line.strip() for line in fp if line.strip()]
+
     write_mysmtp_log("Reading SMTPs...",my_tag,False,False)
     #load smtps from smtps.txt file
     fp=open("smtps.txt","r")
@@ -134,7 +224,7 @@ def load_config():
             pr.port=int(ipvals[1])
         else:
             #default port=25
-            pr.port=25
+            pr.port=587
         #by default set requiresAuthentication to False
         pr.requiresAuthentication=False
         #if last value of line is 1 then authentication is required
@@ -228,9 +318,23 @@ class EmailSender:
         #process_subject_and_body is called everytime recipient is changed
         self.process_subject_and_body()
 
+    
+
     def process_subject_and_body(self):
+        # Escolhe um nome aleatório para o remetente
+        random_name = random.choice(sender_names)
         self.subject=self.config.subject #set subject to the subject in global configuration
         self.body=self.config.body #set body to the body in global configuration
+        self.config.fromName = random_name  # Atualiza o nome do remetente
+
+        # Escolhe um assunto aleatório
+        random_subject = random.choice(subjects)
+        
+        # Substituir placeholders no assunto e no corpo
+        assunto_formatado = random_subject.replace('#CODIGO#', gerar_codigo()).replace('#USER#', extrair_usuario(self.email.Mail))
+
+        self.subject = assunto_formatado  # Atualiza o assunto
+        self.body = self.config.body  # Define o corpo do email
         #here you can perform any modification on subject and body
         #for example if you want to personalize subject and body according to the recipient's email address
         #PLEASE DO NOT MODIFY self.config.body and self.config.subject
